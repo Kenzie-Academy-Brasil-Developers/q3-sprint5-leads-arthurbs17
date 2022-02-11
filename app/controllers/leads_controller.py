@@ -62,6 +62,8 @@ def update_lead():
         if list(data_key)[0] != 'email' or len(list(data_key)) > 1:
             error = WrongKeyReceived(data)
             return jsonify(error.only_email_message), HTTPStatus.BAD_REQUEST
+        if type(data["email"]) != str:
+            return jsonify({"message": "O valor deve ser passado em string"}), HTTPStatus.BAD_REQUEST
             
         lead = LeadsModel.query.filter_by(email=data["email"]).one()
         att_status = {"visits": lead.visits +1, "last_visit" : datetime.now()}
@@ -73,6 +75,27 @@ def update_lead():
         current_app.db.session.commit()
 
         return jsonify("Updated"), HTTPStatus.OK
+    
+    except NoResultFound:
+        return jsonify({"message": "Dado não encontrado no banco"}), HTTPStatus.NOT_FOUND
+
+def delete_lead():
+    try:
+        data = request.get_json()
+        data_key = data.keys()
+
+        if list(data_key)[0] != 'email' or len(list(data_key)) > 1:
+            error = WrongKeyReceived(data)
+            return jsonify(error.only_email_message), HTTPStatus.BAD_REQUEST
+        if type(data["email"]) != str:
+            return jsonify({"message": "O valor deve ser passado em string"}), HTTPStatus.BAD_REQUEST
+            
+        lead = LeadsModel.query.filter_by(email=data["email"]).one()
+            
+        current_app.db.session.delete(lead)
+        current_app.db.session.commit()
+
+        return "", HTTPStatus.NO_CONTENT
     
     except NoResultFound:
         return jsonify({"message": "Dado não encontrado no banco"}), HTTPStatus.NOT_FOUND
