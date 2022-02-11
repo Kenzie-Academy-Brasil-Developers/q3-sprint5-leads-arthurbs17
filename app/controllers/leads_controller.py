@@ -66,7 +66,7 @@ def update_lead():
             return jsonify({"message": "O valor deve ser passado em string"}), HTTPStatus.BAD_REQUEST
             
         lead = LeadsModel.query.filter_by(email=data["email"]).one()
-        att_status = {"visits": lead.visits +1, "last_visit" : datetime.now()}
+        att_status = {"visits": lead.visits + 1, "last_visit": datetime.now()}
 
         for key, value in att_status.items():
             setattr(lead, key, value)
