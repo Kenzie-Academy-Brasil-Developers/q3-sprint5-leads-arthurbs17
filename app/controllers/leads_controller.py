@@ -5,7 +5,9 @@ import re
 from app.exc.wrong_phone import WrongPhone
 from app.services.data_processing import data_processing
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import NoResultFound
 from app.exc.wrong_keys import WrongKeyReceived
+from datetime import datetime
 
 keys_names = ["email", "name", "phone"]
 
@@ -42,3 +44,35 @@ def create_lead():
         if len(error.wrong_key(data)) > 0:
             return jsonify(error.message), HTTPStatus.BAD_REQUEST
         return jsonify(error.miss_keys), HTTPStatus.BAD_REQUEST
+
+def get_leads():
+    
+    leads_list = current_app.db.session.query(LeadsModel).order_by(LeadsModel.visits.desc()).all()
+
+    if not leads_list:
+        return jsonify({"message": "Nenhum dado inserido ainda!"}), HTTPStatus.OK
+
+    return jsonify(leads_list), HTTPStatus.OK
+
+def update_lead():
+    try:
+        data = request.get_json()
+        data_key = data.keys()
+
+        if list(data_key)[0] != 'email' or len(list(data_key)) > 1:
+            error = WrongKeyReceived(data)
+            return jsonify(error.only_email_message), HTTPStatus.BAD_REQUEST
+            
+        lead = LeadsModel.query.filter_by(email=data["email"]).one()
+        att_status = {"visits": lead.visits +1, "last_visit" : datetime.now()}
+
+        for key, value in att_status.items():
+            setattr(lead, key, value)
+            
+        current_app.db.session.add(lead)
+        current_app.db.session.commit()
+
+        return jsonify("Updated"), HTTPStatus.OK
+    
+    except NoResultFound:
+        return jsonify({"message": "Dado não encontrado no banco"}), HTTPStatus.NOT_FOUND
